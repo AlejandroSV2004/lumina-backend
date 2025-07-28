@@ -9,7 +9,7 @@ const router = express.Router();
 // 📦 Configuración de Multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = './uploads';
+    const dir = '../uploads';
     if (!fs.existsSync(dir)) fs.mkdirSync(dir);
     cb(null, dir);
   },
@@ -60,7 +60,7 @@ router.post('/register', upload.single('foto_perfil'), async (req, res) => {
   } = req.body;
 
   const esNegocioFinal = es_negocio === 'true' ? 1 : 0;
-  const fotoUrl = req.file ? `http://localhost:3001/uploads/${req.file.filename}` : null;
+  const fotoUrl = req.file ? `https://lumina-backend-qhzo.onrender.com/uploads/${req.file.filename}` : null;
 
   try {
     // Validar si el correo ya está registrado
