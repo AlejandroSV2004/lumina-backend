@@ -1,23 +1,30 @@
 import express from 'express';
 import db from '../db.js';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import dotenv from 'dotenv';
 
+dotenv.config();
 const router = express.Router();
 
-// 📦 Configuración de Multer
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = '../uploads';
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, Date.now() + ext);
+// 📦 Configuración de Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET
+});
+
+// 📷 Configuración de almacenamiento en Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'usuarios', // carpeta en tu cuenta de Cloudinary
+    allowed_formats: ['jpg', 'png', 'jpeg'],
+    transformation: [{ width: 500, height: 500, crop: 'limit' }]
   }
 });
+
 const upload = multer({ storage });
 
 // 🔠 Generador de ID alfanumérico de 6 caracteres
@@ -60,7 +67,7 @@ router.post('/register', upload.single('foto_perfil'), async (req, res) => {
   } = req.body;
 
   const esNegocioFinal = es_negocio === 'true' ? 1 : 0;
-  const fotoUrl = req.file ? `https://lumina-backend-qhzo.onrender.com/uploads/${req.file.filename}` : null;
+  const fotoUrl = req.file ? req.file.path : null; // URL directa de Cloudinary
 
   try {
     // Validar si el correo ya está registrado
@@ -105,9 +112,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-export default router;
-
-// GET /api/usuarios/:id (con negocio info)
+// 👤 GET /api/usuarios/:id
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -132,7 +137,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// PUT /api/usuarios/:id
+// ✏️ PUT /api/usuarios/:id
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre_usuario, localidad, descripcion } = req.body;
@@ -166,3 +171,5 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
+
+export default router;
