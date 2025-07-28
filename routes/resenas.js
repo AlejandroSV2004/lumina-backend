@@ -30,8 +30,9 @@ router.get('/:id_producto', async (req, res) => {
 });
 
 // ✅ Insertar nueva reseña y devolver lista actualizada
-router.post('/', async (req, res) => {
-  const { id_usuario, id_producto, calificacion, comentario } = req.body;
+router.post('/:id', async (req, res) => {
+  const { id_usuario, calificacion, comentario } = req.body;
+  const id_producto = req.params.id; // ahora se toma de la URL
 
   // Validaciones básicas
   if (!id_usuario || !id_producto || !calificacion || !comentario) {
@@ -67,6 +68,7 @@ router.post('/', async (req, res) => {
     res.status(500).json({ error: 'Error al insertar reseña' });
   }
 });
+
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
 
