@@ -4,16 +4,9 @@ import db from '../db.js';
 const router = express.Router();
 
 // ✅ Crear producto con imagen (desde formulario frontend)
-router.post('/', async (req, res) => {
-  const {
-    id_vendedor,
-    nombre,
-    descripcion,
-    precio,
-    stock,
-    codigo_categoria,
-    imagen // debe ser una URL válida
-  } = req.body;
+router.post('/:slugCategoria', async (req, res) => {
+  const { slugCategoria } = req.params;
+  const { id_vendedor, nombre, descripcion, precio, stock, imagen } = req.body;
 
   try {
     // Validar que el usuario sea vendedor
@@ -26,10 +19,21 @@ router.post('/', async (req, res) => {
       return res.status(403).json({ error: 'No autorizado para crear productos' });
     }
 
+    // Obtener el código de categoría desde el slug
+    const [categoriaResult] = await db.query(
+      'SELECT codigo_categoria FROM categorias WHERE slug = ?',
+      [slugCategoria]
+    );
+
+    if (!categoriaResult.length) {
+      return res.status(400).json({ error: 'Categoría inválida' });
+    }
+
+    const codigo_categoria = categoriaResult[0].codigo_categoria;
+
     // Insertar producto
     await db.query(
-      `INSERT INTO productos 
-       (id_vendedor, nombre, descripcion, precio, stock, codigo_categoria) 
+      `INSERT INTO productos (id_vendedor, nombre, descripcion, precio, stock, codigo_categoria)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [id_vendedor, nombre, descripcion, precio, stock, codigo_categoria]
     );
@@ -37,7 +41,7 @@ router.post('/', async (req, res) => {
     const [idRes] = await db.query('SELECT LAST_INSERT_ID() AS id_producto');
     const id_producto = idRes[0].id_producto;
 
-    // Insertar imagen si se proporciona
+    // Insertar imagen si está presente
     if (imagen) {
       await db.query(
         'INSERT INTO fotos_producto (id_producto, url_imagen) VALUES (?, ?)',
@@ -47,10 +51,11 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({ success: true });
   } catch (error) {
-    console.error('❌ Error al crear producto:', error);
-    res.status(500).json({ error: 'Error al crear producto' });
+    console.error('❌ Error al crear producto con categoría:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+
 
 // ✅ Obtener productos por categoría (slug)
 router.get('/:slugCategoria', async (req, res) => {
